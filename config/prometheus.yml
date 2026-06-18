@@ -1,0 +1,53 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:8080']
+        labels:
+          application: 'gateway'
+
+  - job_name: 'resource-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['resource-service:8081']
+        labels:
+          application: 'resource-service'
+
+  - job_name: 'song-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['song-service:8082']
+        labels:
+          application: 'song-service'
+
+  - job_name: 'resource-processor'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['resource-processor:8083']
+        labels:
+          application: 'resource-processor'
+
+  - job_name: 'storage-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['storage-service:8085']
+        labels:
+          application: 'storage-service'
+
+  - job_name: 'discovery-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['discovery-service:8761']
+        labels:
+          application: 'discovery-service'
+
+  - job_name: 'config-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['config-service:8888']
+        labels:
+          application: 'config-service'

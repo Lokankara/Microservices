@@ -1,0 +1,74 @@
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+server:
+  port: 8080
+
+song:
+  service:
+    url: http://localhost:8081
+
+spring:
+  application:
+    name: resource-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  cloud:
+    stream:
+      function:
+        definition: processedResource
+      bindings:
+        resourceUpload-out-0:
+          destination: resource-processing
+        processedResource-in-0:
+          destination: resource-processed
+          group: resource-service-group
+      rabbit:
+        bindings:
+          resourceUpload-out-0:
+            producer:
+              autoBindDlq: true
+          processedResource-in-0:
+            consumer:
+              autoBindDlq: true
+              requeueRejected: false
+    aws:
+      s3:
+        endpoint: http://localhost:4566
+        bucket-name: mp3-bucket
+      credentials:
+        access-key: minioadmin
+        secret-key: minioadmin
+      region:
+        static: us-east-1
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      songService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        automaticTransitionFromOpenToHalfOpenEnabled: true

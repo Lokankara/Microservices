@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+    aws:
+      credentials:
+        access-key: test
+        secret-key: test
+      region:
+        static: us-east-1
+      s3:
+        endpoint: http://localhost:4566
+  rabbitmq:
+    host: localhost
+    port: 5672
+  datasource:
+    url: jdbc:h2:mem:test-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false

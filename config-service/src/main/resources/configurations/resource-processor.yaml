@@ -1,0 +1,39 @@
+spring:
+  cloud:
+    stream:
+      function:
+        definition: processResource
+      bindings:
+        processResource-in-0:
+          destination: resource-processing
+          group: resource-processor
+      rabbit:
+        bindings:
+          processResource-in-0:
+            consumer:
+              autoBindDlq: true
+              requeueRejected: false
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+resource:
+  service:
+    url: http://localhost:8080
+
+song:
+  service:
+    url: http://localhost:8081
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      songService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
