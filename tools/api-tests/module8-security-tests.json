@@ -1,0 +1,193 @@
+{
+  "info": {
+    "name": "Module 8 - Security Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "OAuth2 + JWT security tests for all services"
+  },
+  "item": [
+    {
+      "name": "Auth Server - Token Generation",
+      "item": [
+        {
+          "name": "TC-9: Get token with valid credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "username", "value": "alice" },
+                { "key": "password", "value": "alice" },
+                { "key": "client_id", "value": "gateway" },
+                { "key": "client_secret", "value": "gateway-secret" }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:9000/auth/oauth2/token",
+              "host": ["localhost:9000"],
+              "path": ["auth", "oauth2", "token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-10: Get token with invalid credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "username", "value": "wrong" },
+                { "key": "password", "value": "wrong" },
+                { "key": "client_id", "value": "gateway" },
+                { "key": "client_secret", "value": "gateway-secret" }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:9000/auth/oauth2/token",
+              "host": ["localhost:9000"],
+              "path": ["auth", "oauth2", "token"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Storage Service - User Role (alice)",
+      "item": [
+        {
+          "name": "TC-2: GET /storages with User token → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/storages",
+              "host": ["localhost:8080"],
+              "path": ["storages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-3: POST /storages with User token → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"storageType\": \"TEST\", \"bucket\": \"test-bucket\", \"path\": \"/test\"}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/storages",
+              "host": ["localhost:8080"],
+              "path": ["storages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-5: DELETE /storages with User token → 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/storages?id=1",
+              "host": ["localhost:8080"],
+              "path": ["storages"],
+              "query": [{ "key": "id", "value": "1" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Storage Service - Admin Role (bob)",
+      "item": [
+        {
+          "name": "TC-4: POST /storages with Admin token → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"storageType\": \"NEW\", \"bucket\": \"new-bucket\", \"path\": \"/new\"}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/storages",
+              "host": ["localhost:8080"],
+              "path": ["storages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-6: DELETE /storages with Admin token → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/storages?id=1",
+              "host": ["localhost:8080"],
+              "path": ["storages"],
+              "query": [{ "key": "id", "value": "1" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invalid Token Tests",
+      "item": [
+        {
+          "name": "TC-7: GET /storages with invalid token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer invalid-token" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/storages",
+              "host": ["localhost:8080"],
+              "path": ["storages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC-1: GET /storages without token → 401",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/storages",
+              "host": ["localhost:8080"],
+              "path": ["storages"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

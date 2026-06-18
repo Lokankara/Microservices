@@ -1,0 +1,10 @@
+rootProject.name = 'architecture'
+
+file('.').eachDir { dir ->
+    if (new File(dir, 'build.gradle').exists() &&
+        dir.name != 'gradle' &&
+        dir.name != 'build' &&
+        !dir.name.startsWith('.')) {
+        include dir.name
+    }
+}

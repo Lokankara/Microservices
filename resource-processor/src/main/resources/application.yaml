@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: resource-processor
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}/config
+  cloud:
+    stream:
+      function:
+        definition: processResource
+      bindings:
+        processResource-in-0:
+          destination: resource-processing
+          group: resource-processor
+        resourceProcessed-out-0:
+          destination: resource-processed
+      rabbit:
+        bindings:
+          processResource-in-0:
+            consumer:
+              autoBindDlq: true
+              requeueRejected: false
+          resourceProcessed-out-0:
+            producer:
+              autoBindDlq: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+server:
+  port: ${RESOURCE_PROCESSOR_PORT:8083}
+
+resource:
+  service:
+    url: ${RESOURCE_SERVICE_URL:http://localhost:8081}
+song:
+  service:
+    url: ${SONG_SERVICE_URL:http://localhost:8082}

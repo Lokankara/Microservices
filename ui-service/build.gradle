@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'com.github.node-gradle.node' version '7.0.2'
+}
+
+node {
+    version = '20.11.0'
+    npmVersion = '10.2.4'
+    download = true
+    workDir = file("${project.projectDir}/.gradle/nodejs")
+    npmWorkDir = file("${project.projectDir}/.gradle/npm")
+    nodeProjectDir = file(project.projectDir)
+}
+
+tasks.register('buildReactApp', NpmTask) {
+    dependsOn 'npmInstall'
+    args = ['run', 'build']
+
+    inputs.dir("src")
+    inputs.dir("public")
+    inputs.file("package.json")
+    inputs.file("package-lock.json")
+
+    outputs.dir(layout.buildDirectory.dir("resources/main/static"))
+
+    environment = ['BUILD_PATH': layout.buildDirectory.dir("resources/main/static").get().asFile.absolutePath]
+}
+
+tasks.register('startReactApp', NpmTask) {
+    dependsOn 'npmInstall'
+    args = ['run', 'start']
+}
+
+tasks.named('jar') {
+    dependsOn 'buildReactApp'
+}
+
+tasks.named('build') {
+    dependsOn 'buildReactApp'
+}
+
+tasks.register('bootRun') {
+    dependsOn 'startReactApp'
+}
