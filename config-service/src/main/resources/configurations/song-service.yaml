@@ -10,9 +10,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: postgres
+    url: ${SONG_DB_URL:jdbc:postgresql://${SONG_DB_HOST:song-db}:${SONG_DB_PORT:5432}/${SONG_DB_NAME:postgres}
+    username: ${SONG_DB_USER:postgres}
+    password: ${SONG_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

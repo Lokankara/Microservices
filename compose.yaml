@@ -19,17 +19,17 @@ services:
     container_name: resource-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_RESOURCE_DB}
-      POSTGRES_USER: ${POSTGRES_RESOURCE_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_RESOURCE_PASSWORD}
+      POSTGRES_DB: ${RESOURCE_DB_NAME}
+      POSTGRES_USER: ${RESOURCE_DB_USER}
+      POSTGRES_PASSWORD: ${RESOURCE_DB_PASSWORD}
     ports:
-      - "${POSTGRES_RESOURCE_PORT}:5432"
+      - "${RESOURCE_DB_PORT}:5432"
     volumes:
       - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
     networks:
       - microservices-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_RESOURCE_USER} -d ${POSTGRES_RESOURCE_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${RESOURCE_DB_USER} -d ${RESOURCE_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,17 +39,17 @@ services:
     container_name: song-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_SONG_DB}
-      POSTGRES_USER: ${POSTGRES_SONG_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_SONG_PASSWORD}
+      POSTGRES_DB: ${SONG_DB_NAME}
+      POSTGRES_USER: ${SONG_DB_USER}
+      POSTGRES_PASSWORD: ${SONG_DB_PASSWORD}
     ports:
-      - "${POSTGRES_SONG_PORT}:5432"
+      - "${SONG_DB_PORT}:5432"
     volumes:
       - ./init-scripts/song-db:/docker-entrypoint-initdb.d
     networks:
       - microservices-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SONG_USER} -d ${POSTGRES_SONG_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${SONG_DB_USER} -d ${SONG_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,17 +59,17 @@ services:
     container_name: storage-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_STORAGE_DB}
-      POSTGRES_USER: ${POSTGRES_STORAGE_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_STORAGE_PASSWORD}
+      POSTGRES_DB: ${STORAGE_DB_NAME}
+      POSTGRES_USER: ${STORAGE_DB_USER}
+      POSTGRES_PASSWORD: ${STORAGE_DB_PASSWORD}
     ports:
-      - "${POSTGRES_STORAGE_PORT}:5432"
+      - "${STORAGE_DB_PORT}:5432"
     volumes:
       - ./init-scripts/storage-db:/docker-entrypoint-initdb.d
     networks:
       - microservices-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_STORAGE_USER} -d ${POSTGRES_STORAGE_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${STORAGE_DB_USER} -d ${STORAGE_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -79,15 +79,15 @@ services:
     container_name: auth-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_AUTH_DB}
-      POSTGRES_USER: ${POSTGRES_AUTH_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
+      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
     ports:
-      - "${POSTGRES_AUTH_PORT}:5432"
+      - "${AUTH_DB_PORT}:5432"
     networks:
       - microservices-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_AUTH_USER} -d ${POSTGRES_AUTH_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -253,9 +253,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=9000
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/${POSTGRES_AUTH_DB}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_AUTH_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_AUTH_PASSWORD}
+      - SPRING_DATASOURCE_URL=${AUTH_DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${AUTH_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${AUTH_DB_PASSWORD}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -356,8 +356,8 @@ services:
       - SERVER_PORT=${RESOURCE_SERVICE_PORT}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_URL}
       - SPRING_DATASOURCE_URL=${RESOURCE_DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_RESOURCE_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_RESOURCE_PASSWORD}
+      - SPRING_DATASOURCE_USERNAME=${RESOURCE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${RESOURCE_DB_PASSWORD}
       - AWS_ENDPOINT_URL=${LOCALSTACK_ENDPOINT_URL}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_REGION=${LOCALSTACK_DEFAULT_REGION}
@@ -399,8 +399,8 @@ services:
       - SERVER_PORT=${SONG_SERVICE_PORT}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_URL}
       - SPRING_DATASOURCE_URL=${SONG_DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_SONG_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_SONG_PASSWORD}
+      - SPRING_DATASOURCE_USERNAME=${SONG_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${SONG_DB_PASSWORD}
     depends_on:
       discovery-service:
         condition: service_healthy
@@ -466,8 +466,8 @@ services:
       - SERVER_PORT=${STORAGE_SERVICE_PORT}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_URL}
       - SPRING_DATASOURCE_URL=${STORAGE_DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_STORAGE_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_STORAGE_PASSWORD}
+      - SPRING_DATASOURCE_USERNAME=${STORAGE_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${STORAGE_DB_PASSWORD}
       - AWS_ENDPOINT_URL=${LOCALSTACK_ENDPOINT_URL}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}

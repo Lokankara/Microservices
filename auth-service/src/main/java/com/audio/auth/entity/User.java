@@ -1,16 +1,9 @@
 package com.audio.auth.entity;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashSet;
@@ -19,6 +12,8 @@ import java.util.Set;
 @Setter
 @Getter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "users")
 public class User {
 
@@ -39,14 +34,4 @@ public class User {
 
     @Column(nullable = false)
     private boolean enabled = true;
-
-    public User() {
-    }
-
-    public User(String username, String password, Set<String> roles, boolean enabled) {
-        this.username = username;
-        this.password = password;
-        this.roles = roles;
-        this.enabled = enabled;
-    }
 }

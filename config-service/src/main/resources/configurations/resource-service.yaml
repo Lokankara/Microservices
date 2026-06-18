@@ -16,9 +16,9 @@ spring:
   application:
     name: resource-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: postgres
+    url: ${RESOURCE_DB_URL:jdbc:postgresql://${RESOURCE_DB_HOST:resource-db}:${RESOURCE_DB_PORT:5432}/${RESOURCE_DB_NAME:postgres}
+    username: ${RESOURCE_DB_USER:postgres}
+    password: ${RESOURCE_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -48,18 +48,18 @@ spring:
               requeueRejected: false
     aws:
       s3:
-        endpoint: http://localhost:4566
+        endpoint: ${S3_ENDPOINT:http://localstack:4566}
         bucket-name: mp3-bucket
       credentials:
-        access-key: minioadmin
-        secret-key: minioadmin
+        access-key: ${AWS_ACCESS_KEY_ID:minioadmin}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:minioadmin}
       region:
         static: us-east-1
   rabbitmq:
-    host: localhost
+    host: ${RABBITMQ_HOST:rabbitmq}
     port: 5672
-    username: guest
-    password: guest
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 
 resilience4j:
   circuitbreaker:

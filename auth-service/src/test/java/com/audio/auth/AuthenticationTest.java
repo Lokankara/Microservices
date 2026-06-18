@@ -115,7 +115,6 @@ class AuthenticationTest {
     }
 
     @Test
-    @Disabled("Password grant type requires custom OAuth2AuthenticationProvider (item #9 in fix plan)")
     void testObtainAccessTokenWithAdminRole() throws Exception {
         mockMvc.perform(post(TOKEN_URL)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -133,7 +132,6 @@ class AuthenticationTest {
     }
 
     @Test
-    @Disabled("Password grant type requires custom OAuth2AuthenticationProvider (item #9 in fix plan)")
     void testObtainAccessTokenWithUserRole() throws Exception {
         mockMvc.perform(post(TOKEN_URL)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -151,7 +149,6 @@ class AuthenticationTest {
     }
 
     @Test
-    @Disabled("Password grant type requires custom OAuth2AuthenticationProvider (item #9 in fix plan)")
     void testAccessTokenContainsRoles() throws Exception {
         MvcResult result = mockMvc.perform(post(TOKEN_URL)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -176,7 +173,6 @@ class AuthenticationTest {
     }
 
     @Test
-    @Disabled("Password grant type requires custom OAuth2AuthenticationProvider (item #9 in fix plan)")
     void testAccessTokenWithUserRoleContainsUserAuthority() throws Exception {
         MvcResult result = mockMvc.perform(post(TOKEN_URL)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -201,7 +197,6 @@ class AuthenticationTest {
     }
 
     @Test
-    @Disabled("Password grant type requires custom OAuth2AuthenticationProvider (item #9 in fix plan)")
     void testInvalidUserCredentials() throws Exception {
         mockMvc.perform(post(TOKEN_URL)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -213,5 +208,4 @@ class AuthenticationTest {
                         .param("scope", SCOPE))
                 .andExpect(status().isUnauthorized());
     }
-
 }

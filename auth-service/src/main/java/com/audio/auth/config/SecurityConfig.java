@@ -1,23 +1,16 @@
 package com.audio.auth.config;
 
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -32,14 +25,15 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -48,90 +42,109 @@ import java.util.UUID;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) {
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                .requestMatchers("/actuator/**").authenticated()
-                .requestMatchers("/oauth2/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2AuthorizationServer(authorizationServer ->
-                authorizationServer
-                    .oidc(Customizer.withDefaults())
-            )
-            .formLogin(AbstractHttpConfigurer::disable)
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-            );
-
-        http.csrf(AbstractHttpConfigurer::disable);
-
+                .securityMatcher("/oauth2/**", "/auth/**", "/login", "/error")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login", "/oauth2/**", "/error").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .successHandler(authenticationSuccessHandler())
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll()
+                )
+                .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
-        RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("gateway")
-                .clientSecret(passwordEncoder.encode("gateway-secret"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return (request, response, authentication) -> response.sendRedirect("/oauth2/authorize?response_type=code&client_id=auth-client&redirect_uri=http://127.0.0.1:8080/login/oauth2/code/auth-client&scope=openid%20profile%20roles");
+    }
+
+    @Bean
+    public RegisteredClientRepository registeredClientRepository() {
+        PasswordEncoder passwordEncoder = passwordEncoder();
+
+        RegisteredClient authClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("auth-client")
+                .clientSecret(passwordEncoder.encode("secret"))
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .authorizationGrantType(new AuthorizationGrantType("password"))
-                .redirectUri("http://localhost:8080/login/oauth2/code/gateway")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/auth-client")
+                .redirectUri("http://127.0.0.1:8080/authorized")
+                .postLogoutRedirectUri("http://127.0.0.1:8080/logout")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope("roles")
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(false)
-                        .build())
                 .tokenSettings(TokenSettings.builder()
                         .accessTokenTimeToLive(Duration.ofHours(1))
-                        .refreshTokenTimeToLive(Duration.ofDays(7))
+                        .refreshTokenTimeToLive(Duration.ofHours(24))
+                        .build())
+                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
+                .build();
+
+        RegisteredClient storageClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("storage-client")
+                .clientSecret(passwordEncoder.encode("storage-secret"))
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope("read")
+                .scope("write")
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(1))
                         .build())
                 .build();
 
-        return new InMemoryRegisteredClientRepository(oidcClient);
+        return new InMemoryRegisteredClientRepository(authClient, storageClient);
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        PasswordEncoder passwordEncoder = passwordEncoder();
+
+        UserDetails admin = User.builder()
+                .username("alice")
+                .password(passwordEncoder.encode("alice"))
+                .roles("ADMIN")
                 .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
 
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        return keyPair;
-    }
+        UserDetails user = User.builder()
+                .username("bob")
+                .password(passwordEncoder.encode("bob"))
+                .roles("USER")
+                .build();
 
-    @Bean
-    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        return NimbusJwtDecoder.withJwkSource(jwkSource).build();
+        return new InMemoryUserDetailsManager(admin, user);
     }
 
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer() {
         return context -> {
-            if (context.getPrincipal() instanceof org.springframework.security.core.userdetails.User user) {
-                context.getClaims().claim("roles", user.getAuthorities().stream()
-                        .map(auth -> Objects.requireNonNull(auth.getAuthority()).replace("ROLE_", ""))
-                        .collect(java.util.stream.Collectors.toList()));
+            if (context.getTokenType().getValue().equals("access_token")) {
+                Collection<? extends GrantedAuthority> authorities = context.getPrincipal().getAuthorities();
+                List<String> roles = authorities.stream()
+                        .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
+                        .filter(auth -> auth.startsWith("ROLE_"))
+                        .map(auth -> auth.substring(5))
+                        .toList();
+
+                if (!roles.isEmpty()) {
+                    context.getClaims().claim("roles", roles);
+                }
             }
         };
     }
@@ -140,29 +153,13 @@ public class SecurityConfig {
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
                 .issuer("http://localhost:9000")
-                .authorizationEndpoint("/oauth2/authorize")
-                .tokenEndpoint("/oauth2/token")
                 .build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration,
-                                                       DaoAuthenticationProvider authenticationProvider) throws Exception {
-        AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
-        ((ProviderManager) authenticationManager).getProviders().addFirst(authenticationProvider);
-        return authenticationManager;
-    }
-
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-                                                            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
-        authenticationProvider.setPasswordEncoder(passwordEncoder);
-        return authenticationProvider;
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(
+                new SecretKeySpec("secretsecretsecretsecretsecretsecret".getBytes(StandardCharsets.UTF_8), "HmacSHA256")
+        ).build();
     }
 }

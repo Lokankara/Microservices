@@ -1,0 +1,129 @@
+{
+  "title": "API Gateway Performance",
+  "uid": "api-gateway-perf",
+  "tags": ["api-gateway", "http"],
+  "timezone": "browser",
+  "refresh": "15s",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"api-gateway\"}[1m])) by (uri, method)",
+          "legendFormat": "{{method}} {{uri}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (5xx)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"api-gateway\", status=~\"5..\"}[1m])) by (uri, status)",
+          "legendFormat": "{{status}} {{uri}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "fixed", "fixedColor": "red" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Request Latency p50 / p95 / p99",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"api-gateway\"}[1m])) by (le, uri))",
+          "legendFormat": "p50 {{uri}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"api-gateway\"}[1m])) by (le, uri))",
+          "legendFormat": "p95 {{uri}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"api-gateway\"}[1m])) by (le, uri))",
+          "legendFormat": "p99 {{uri}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 4,
+      "title": "Total Requests",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(http_server_requests_seconds_count{job=\"api-gateway\"})",
+          "legendFormat": "Total",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "4xx Errors",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(http_server_requests_seconds_count{job=\"api-gateway\", status=~\"4..\"})",
+          "legendFormat": "4xx",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "5xx Errors",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 16, "w": 8, "h": 4 },
+      "targets": [
+        {
+          "expr": "sum(http_server_requests_seconds_count{job=\"api-gateway\", status=~\"5..\"})",
+          "legendFormat": "5xx",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "red" }
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Datasource"
+      }
+    ]
+  }
+}
